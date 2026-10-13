@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-const props = { hasSurvey: false, isWorking: false, maxRows: 10 } as never
+const props = { isDraft: false, isWorking: false, hint: '? for shortcuts' } as never
 
 for (const surface of ['terminal', 'desktop'] as const) {
   test(`modes, dots and counts on ${surface}`, async ($, on) => {
@@ -19,7 +19,7 @@ for (const surface of ['terminal', 'desktop'] as const) {
     await $.skill.prompt({ skill: 'seo-audit', text: '' } as never)
     await $.skill.prompt({ skill: 'seo-audit', text: '' } as never)
 
-    const ui = await $.ui.mount({ plugin: 'skills-band', surface, component: 'AbovePrompt', props })
+    const ui = await $.ui.mount({ plugin: 'skills-band', surface, component: 'PromptHint', props })
     const chip = (key: string) => ui.find({ type: 'Box', key })
     expect((await chip('caveman'))?.text).toBe('●caveman')
     expect((await chip('ponytail'))?.text).toBe('●ponytail:ultra')
@@ -39,8 +39,8 @@ test('spinner replaces the fresh mark while working', async ($, on) => {
   await $.prompt.submit({ text: 'a' } as never)
   await $.skill.prompt({ skill: 'stripe', text: '' } as never)
 
-  const working = { hasSurvey: false, isWorking: true, maxRows: 10 } as never
-  const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props: working })
+  const working = { isDraft: false, isWorking: true, hint: 'esc to interrupt' } as never
+  const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'PromptHint', props: working })
   expect((await ui.find({ type: 'Box', key: 'stripe' }))?.text).toMatch(/^[◐◓◑◒]stripe$/)
 })
 
@@ -48,12 +48,12 @@ test('plugin skills show their short name, and an empty band says so', async ($,
   on('skill.prompt', (_$, e) => ({ text: e.text }) as never)
   on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
 
-  const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'PromptHint', props })
   expect(await ui.find({ type: 'Text', text: 'no skills used yet' })).toBeDefined()
 
   await $.prompt.submit({ text: '/frontend-design' } as never)
   await $.skill.prompt({ skill: 'frontend-design:frontend-design', text: '' } as never)
-  const after = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  const after = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'PromptHint', props })
   expect((await after.find({ type: 'Box', key: 'frontend-design:frontend-design' }))?.text).toBe('●frontend-design')
   expect(await after.find({ type: 'Text', text: 'no skills used yet' })).toBeUndefined()
 })
@@ -70,12 +70,24 @@ test('badges follow what the hooks inject, not flag files', async ($, on) => {
   await $.classic.SessionStart({ source: 'startup' } as never)
   await $.classic.UserPromptSubmit({ prompt: 'a' } as never)
   await $.prompt.submit({ text: 'a' } as never)
-  let ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  let ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'PromptHint', props })
   expect((await ui.find({ type: 'Box', key: 'caveman' }))?.text).toBe('●caveman:ultra')
   expect(await ui.find({ type: 'Box', key: 'ponytail' })).toBeUndefined()
 
   reminder = false
   await $.classic.UserPromptSubmit({ prompt: 'stop caveman' } as never)
-  ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'PromptHint', props })
   expect(await ui.find({ type: 'Box', key: 'caveman' })).toBeUndefined()
+})
+
+test('a band loaded after the session started falls back to the ponytail flag', async ($, on) => {
+  on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
+  on('env.get', () => ({ value: 'C:/cfg' }) as never)
+  on('fs.read', () => ({ value: 'ultra\n' }) as never)
+
+  // no classic.SessionStart: the module missed it
+  await $.prompt.submit({ text: 'a' } as never)
+  const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'desktop', component: 'PromptHint', props })
+  expect((await ui.find({ type: 'Box', key: 'ponytail' }))?.text).toBe('●ponytail:ultra')
+  expect(await ui.find({ type: 'Text', text: '? for shortcuts' })).toBeDefined()
 })

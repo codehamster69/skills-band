@@ -6,6 +6,8 @@ import type { Modes, Skill } from '../types'
 const used = atom({ plugin: 'skills-band', key: 'used' } as const, [] as Skill[])
 const turn = atom({ plugin: 'skills-band', key: 'turn' } as const, 0)
 const frame = atom({ plugin: 'skills-band', key: 'frame' } as const, 0)
+// whether the session's start reached this module; a mod loaded later never sees ponytail's one announcement
+const sawStart = atom({ plugin: 'skills-band', key: 'sawStart' } as const, false)
 const modes = atom({ plugin: 'skills-band', key: 'modes' } as const, { caveman: null, ponytail: null } as Modes)
 
 const SPIN = ['◐', '◓', '◑', '◒']
@@ -36,13 +38,29 @@ const ponytailFlag = async ($: EngineInterface) => {
   }
 }
 
+// loaded after the session started (a reload, the desktop's late load): ponytail's flag is the only sign left
+const ponytailFallback = async ($: EngineInterface) => {
+  const isLate = !(await read($, sawStart))
+  if (!isLate && (await read($, modes)).ponytail === null) return
+  const level = await ponytailFlag($)
+  // the flag only relabels a ponytail this session already has, unless the start was missed
+  if (level !== null || isLate) await update($, modes, m => ({ ...m, ponytail: level }))
+}
+
 export const register: Register = on => {
   let spinner: Timer | undefined
 
   on('classic.SessionStart', async ($, e, next) => {
     const ran = await next(e)
     const context = (ran as { additionalContext?: string[] }).additionalContext
+    await update($, sawStart, () => true)
     await update($, modes, () => ({ caveman: injected(context, 'caveman'), ponytail: injected(context, 'ponytail') }))
+    return ran
+  })
+
+  on('session.start', async ($, e, next) => {
+    const ran = await next(e)
+    await ponytailFallback($)
     return ran
   })
 
@@ -57,11 +75,7 @@ export const register: Register = on => {
   on('prompt.submit', async ($, e, next) => {
     await update($, turn, n => n + 1)
     const ran = await next(e)
-    // the flag only relabels a ponytail this session already has; another window cannot add or remove it
-    if ((await read($, modes)).ponytail !== null) {
-      const level = await ponytailFlag($)
-      if (level !== null) await update($, modes, m => ({ ...m, ponytail: level }))
-    }
+    await ponytailFallback($)
     return ran
   })
 
@@ -87,10 +101,8 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.props.hasSurvey) {
-      return next(e)
-    }
+  // the hint line under the prompt: the desktop frames everything above the prompt in a panel, this line it does not
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
 
     const now = await read($, turn)
     const tick = await read($, frame)
@@ -133,6 +145,8 @@ export const register: Register = on => {
           </Box>
         ))}
         {empty && <Text key="empty" dimColor>{empty}</Text>}
+        {/* the band takes the hint line's place, so its own text (esc to interrupt, ...) rides along at the end */}
+        {e.props.hint && <Text key="hint" dimColor>{e.props.hint}</Text>}
       </Box>
     )
   })
