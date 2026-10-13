@@ -15,52 +15,6 @@ const ORANGE = '#d97757'
 // dot: an orange mark before the label, spin while its turn runs; dim: used in an earlier turn
 type Item = { key: string; text: string; dot: 'on' | 'spin' | null; dim: boolean }
 
-// the README preview's geometry: 14px monospace
-const CELL = 8.4
-const ROW = 22
-const ROW_GAP = 4
-const GAP = 2 * CELL
-const MAX_WIDTH = 760
-
-const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-// an Svg is an image, so it cannot read the app's theme colors: the light/dark pair follows the color scheme the app reports
-const STYLE = '<style>.t{fill:#1c1917}.d{fill:#1c1917;opacity:.5}@media (prefers-color-scheme:dark){.t{fill:#e7e5e4}.d{fill:#e7e5e4;opacity:.45}}</style>'
-
-const bandSvg = (header: string, items: Item[], tick: number, empty: string | null) => {
-  let x = 0
-  let y = 0
-  const marks: string[] = []
-  const place = (cells: number) => {
-    const w = cells * CELL
-    if (x > 0 && x + w > MAX_WIDTH) {
-      x = 0
-      y += ROW + ROW_GAP
-    }
-    const at = x
-    x += w + GAP
-    return at
-  }
-  const hx = place([...header].length)
-  marks.push(`<text x="${hx.toFixed(1)}" y="${y + 15.5}" class="t" font-weight="700" letter-spacing="1">${esc(header)}</text>`)
-  for (const it of items) {
-    const at = place([...it.text].length + (it.dot ? 2 : 0))
-    let tx = at
-    if (it.dot) {
-      marks.push(`<text x="${at.toFixed(1)}" y="${y + 15.5}" fill="${ORANGE}">${it.dot === 'spin' ? SPIN[tick % SPIN.length] : '●'}</text>`)
-      tx += 2 * CELL
-    }
-    marks.push(`<text x="${tx.toFixed(1)}" y="${y + 15.5}" class="${it.dim ? 'd' : 't'}">${esc(it.text)}</text>`)
-  }
-  if (empty) {
-    const at = place([...empty].length)
-    marks.push(`<text x="${at.toFixed(1)}" y="${y + 15.5}" class="d">${esc(empty)}</text>`)
-  }
-  const width = Math.ceil(y > 0 ? MAX_WIDTH : Math.max(1, x - GAP))
-  const height = y + ROW
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="ui-monospace, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14">${STYLE}${marks.join('')}</svg>`
-}
-
 // the caveman and ponytail hooks say so in the context they inject; that text, not a flag file, proves a mode reached this session
 const MARKS = {
   caveman: /CAVEMAN MODE ACTIVE(?: — mode: | \()([a-z0-9-]{1,20})/,
@@ -165,18 +119,16 @@ export const register: Register = on => {
     ]
     const empty = skills.length === 0 ? 'no skills used yet' : null
 
-    if (e.surface !== 'terminal') {
-      const { Svg } = $.ui.resolve(e)
-      return <Svg source={bandSvg('SKILLS', items, tick, empty)} alt={`Skills: ${items.map(i => i.text).join(', ') || 'none yet'}`} />
-    }
-
+    // theme elements on every surface: an Svg cannot see the app's theme, so its text went unreadable when the two disagreed
     const { Box, Text } = $.ui.resolve(e)
+    // the terminal's own 'claude' key is its theme's orange; elsewhere Claude's brand orange
+    const orange = e.surface === 'terminal' ? 'claude' : ORANGE
     return (
       <Box flexDirection="row" flexWrap="wrap" alignItems="center" columnGap={2}>
         <Text key="header" bold>SKILLS</Text>
         {items.map(it => (
-          <Box key={it.key}>
-            {it.dot && <Text color="claude">{it.dot === 'spin' ? SPIN[tick % SPIN.length] : '●'} </Text>}
+          <Box key={it.key} flexDirection="row" columnGap={1}>
+            {it.dot && <Text color={orange}>{it.dot === 'spin' ? SPIN[tick % SPIN.length] : '●'}</Text>}
             <Text dimColor={it.dim}>{it.text}</Text>
           </Box>
         ))}
