@@ -101,8 +101,11 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // the hint line under the prompt: the desktop frames everything above the prompt in a panel, this line it does not
-  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+  // above the prompt: the desktop draws no plugin tree in the hint line under it, so this band is the only place it shows
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) {
+      return next(e)
+    }
 
     const now = await read($, turn)
     const tick = await read($, frame)
@@ -145,8 +148,6 @@ export const register: Register = on => {
           </Box>
         ))}
         {empty && <Text key="empty" dimColor>{empty}</Text>}
-        {/* the band takes the hint line's place, so its own text (esc to interrupt, ...) rides along at the end */}
-        {e.props.hint && <Text key="hint" dimColor>{e.props.hint}</Text>}
       </Box>
     )
   })

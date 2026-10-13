@@ -1,1 +1,1 @@
-{ "name": "skills-band", "version": "0.5.0", "description": "One-row skills band under the prompt: theme-colored labels, Claude-orange dots on active skills and caveman/ponytail modes", "author": { "name": "Rohandeep" }, "types": "./types/index.d.ts" }
+{ "name": "skills-band", "version": "0.5.1", "description": "One-row skills band above the prompt: theme-colored labels, Claude-orange dots on active skills and caveman/ponytail modes", "author": { "name": "Rohandeep" }, "types": "./types/index.d.ts" }

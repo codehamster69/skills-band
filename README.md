@@ -1,8 +1,8 @@
 # skills-band
 
-A one-row band under the Claude Code prompt that shows which skills this session has used.
+A one-row band above the Claude Code prompt that shows which skills this session has used.
 
-![skills-band under the Claude Code prompt](docs/band.svg)
+![skills-band above the Claude Code prompt](docs/band.svg)
 
 <sub>Preview of the band in a dark theme: caveman and ponytail active, `seo-audit` loading this turn (spinning), the rest used in earlier turns. Labels take your theme's text color, so a light theme shows dark text.</sub>
 
@@ -28,7 +28,7 @@ claude plugin marketplace add codehamster69/skills-band
 claude plugin install skills-band@rohan-mods
 ```
 
-Restart Claude Code. The band appears under the prompt right away ("no skills used yet") and fills in as skills run. Skills that ran before the restart are not shown.
+Restart Claude Code. The band appears above the prompt right away ("no skills used yet") and fills in as skills run. Skills that ran before the restart are not shown.
 
 ### Using caveman/ponytail?
 
