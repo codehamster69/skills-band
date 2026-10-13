@@ -2,9 +2,9 @@
 
 A one-row band above the Claude Code prompt that shows which skills this session has used.
 
-```
- ⚡ SKILLS   caveman   ponytail:ultra   ◐ seo-audit ×2   supabase   stripe
-```
+![skills-band above the Claude Code prompt](docs/band.svg)
+
+<sub>Preview drawn with the band's real colors and layout: `seo-audit` loaded this turn (spinning), `supabase` last turn, `frontend-design` 2–3 turns ago, `stripe` older.</sub>
 
 - **Heat**: each skill is colored by how recently it ran. Orange means this turn, amber means last turn, dark amber means 2–3 turns ago, and gray means older. The most recent skills come first. `×N` counts how many times a skill ran.
 - **Pulse**: a skill loaded during the current turn spins `◐◓◑◒` while Claude works, then shows 🔥 when the turn ends.
