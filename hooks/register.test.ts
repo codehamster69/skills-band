@@ -3,7 +3,7 @@ import { expect, test } from 'claude-code/testing'
 const props = { hasSurvey: false, isWorking: false, maxRows: 10 } as never
 
 for (const surface of ['terminal'] as const) {
-  test(`modes, heat and counts on ${surface}`, async ($, on) => {
+  test(`modes, dots and counts on ${surface}`, async ($, on) => {
     on('skill.prompt', (_$, e) => ({ text: e.text }) as never)
     on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
     on('env.get', () => ({ value: 'C:/cfg' }) as never)
@@ -21,11 +21,14 @@ for (const surface of ['terminal'] as const) {
 
     const ui = await $.ui.mount({ plugin: 'skills-band', surface, component: 'AbovePrompt', props })
     const chip = (key: string) => ui.find({ type: 'Box', key })
-    expect((await chip('caveman'))?.props).toMatchObject({ backgroundColor: '#7c3aed', paddingX: 1 })
-    expect((await chip('ponytail'))?.text).toBe('ponytail:ultra')
-    expect((await chip('seo-audit'))?.props.backgroundColor).toBe('#f97316')
+    expect((await chip('caveman'))?.text).toBe('● caveman')
+    expect((await chip('ponytail'))?.text).toBe('● ponytail:ultra')
     expect((await chip('seo-audit'))?.text).toBe('● seo-audit ×2')
-    expect((await chip('supabase'))?.props.backgroundColor).toBe('#f59e0b')
+    expect((await chip('supabase'))?.text).toBe('supabase')
+    // the dot is Claude's orange; labels keep the theme's text color, older ones dimmed
+    expect((await ui.find({ type: 'Text', text: '● ' }))?.props.color).toBe('claude')
+    expect((await ui.find({ type: 'Text', text: 'supabase' }))?.props.dimColor).toBe(true)
+    expect((await ui.find({ type: 'Text', text: 'seo-audit ×2' }))?.props.color).toBeUndefined()
   })
 }
 
@@ -38,7 +41,7 @@ test('spinner replaces the fresh mark while working', async ($, on) => {
 
   const working = { hasSurvey: false, isWorking: true, maxRows: 10 } as never
   const ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props: working })
-  expect(await ui.find({ type: 'Text', text: /^[◐◓◑◒] stripe$/ })).toBeDefined()
+  expect((await ui.find({ type: 'Box', key: 'stripe' }))?.text).toMatch(/^[◐◓◑◒] stripe$/)
 })
 
 test('plugin skills show their short name, and an empty band says so', async ($, on) => {
@@ -51,11 +54,11 @@ test('plugin skills show their short name, and an empty band says so', async ($,
   await $.prompt.submit({ text: '/frontend-design' } as never)
   await $.skill.prompt({ skill: 'frontend-design:frontend-design', text: '' } as never)
   const after = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
-  expect(await after.find({ type: 'Text', text: '● frontend-design' })).toBeDefined()
+  expect((await after.find({ type: 'Box', key: 'frontend-design:frontend-design' }))?.text).toBe('● frontend-design')
   expect(await after.find({ type: 'Text', text: 'no skills used yet' })).toBeUndefined()
 })
 
-test('desktop draws the README design as one Svg', async ($, on) => {
+test('desktop draws the band as one Svg', async ($, on) => {
   on('skill.prompt', (_$, e) => ({ text: e.text }) as never)
   on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
   on('env.get', () => ({ value: 'C:/cfg' }) as never)
@@ -75,7 +78,8 @@ test('desktop draws the README design as one Svg', async ($, on) => {
   const source = String(svg?.props.source)
   expect(source).toContain('>SKILLS<')
   expect(source).toContain('>ponytail:ultra<')
-  expect(source).toContain('fill="#f97316"')
+  expect(source).toContain('fill="#d97757"')
+  expect(source).not.toContain('<rect')
   expect(source).toContain('>supabase<')
   expect(source).toContain('a&lt;b')
   expect(String(svg?.props.alt)).toContain('supabase')
@@ -94,7 +98,7 @@ test('badges follow what the hooks inject, not flag files', async ($, on) => {
   await $.classic.UserPromptSubmit({ prompt: 'a' } as never)
   await $.prompt.submit({ text: 'a' } as never)
   let ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
-  expect((await ui.find({ type: 'Box', key: 'caveman' }))?.text).toBe('caveman:ultra')
+  expect((await ui.find({ type: 'Box', key: 'caveman' }))?.text).toBe('● caveman:ultra')
   expect(await ui.find({ type: 'Box', key: 'ponytail' })).toBeUndefined()
 
   reminder = false
