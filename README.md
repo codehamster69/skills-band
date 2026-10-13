@@ -8,7 +8,7 @@ A one-row band above the Claude Code prompt that shows which skills this session
 
 - **Heat**: each skill is colored by how recently it ran. Orange means this turn, amber means last turn, dark amber means 2–3 turns ago, and gray means older. The most recent skills come first. `×N` counts how many times a skill ran.
 - **Pulse**: a skill loaded during the current turn spins `◐◓◑◒` while Claude works, then shows 🔥 when the turn ends.
-- **Mode badges** (optional): when the [caveman](https://github.com/JuliusBrussee/caveman) or ponytail plugins are active, their mode shows as a violet badge (`ponytail:ultra`). Without them, the badges stay hidden.
+- **Mode badges** (optional): when the caveman or ponytail plugins are active, their mode shows as a violet badge (`ponytail:ultra`). Without them, the badges stay hidden.
 
 ## Install
 
