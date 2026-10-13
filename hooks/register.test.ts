@@ -7,9 +7,12 @@ for (const surface of ['terminal'] as const) {
     on('skill.prompt', (_$, e) => ({ text: e.text }) as never)
     on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
     on('env.get', () => ({ value: 'C:/cfg' }) as never)
-    on('session.id', () => ({ value: 'abc' }) as never)
+    on('classic.SessionStart', () => ({ additionalContext: ['CAVEMAN MODE ACTIVE — mode: caveman', 'PONYTAIL MODE ACTIVE — level: full'] }) as never)
+    on('classic.UserPromptSubmit', () => ({ additionalContext: ['CAVEMAN MODE ACTIVE (caveman). Respond terse'] }) as never)
     on('fs.read', (_$, e) => ({ value: String((e as { path: string }).path).includes('ponytail') ? 'ultra\n' : 'full\n' }) as never)
 
+    await $.classic.SessionStart({ source: 'startup' } as never)
+    await $.classic.UserPromptSubmit({ prompt: 'a' } as never)
     await $.prompt.submit({ text: 'a' } as never)
     await $.skill.prompt({ skill: 'supabase', text: '' } as never)
     await $.prompt.submit({ text: 'b' } as never)
@@ -56,9 +59,11 @@ test('desktop draws the README design as one Svg', async ($, on) => {
   on('skill.prompt', (_$, e) => ({ text: e.text }) as never)
   on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
   on('env.get', () => ({ value: 'C:/cfg' }) as never)
-  on('session.id', () => ({ value: 'abc' }) as never)
+  on('classic.SessionStart', () => ({ additionalContext: ['CAVEMAN MODE ACTIVE — mode: caveman', 'PONYTAIL MODE ACTIVE — level: full'] }) as never)
+  on('classic.UserPromptSubmit', () => ({ additionalContext: ['CAVEMAN MODE ACTIVE (caveman). Respond terse'] }) as never)
   on('fs.read', (_$, e) => ({ value: String((e as { path: string }).path).includes('ponytail') ? 'ultra\n' : 'full\n' }) as never)
 
+  await $.classic.SessionStart({ source: 'startup' } as never)
   await $.prompt.submit({ text: 'a' } as never)
   await $.skill.prompt({ skill: 'supabase', text: '' } as never)
   await $.prompt.submit({ text: 'b' } as never)
@@ -74,4 +79,26 @@ test('desktop draws the README design as one Svg', async ($, on) => {
   expect(source).toContain('>supabase<')
   expect(source).toContain('a&lt;b')
   expect(String(svg?.props.alt)).toContain('supabase')
+})
+
+test('badges follow what the hooks inject, not flag files', async ($, on) => {
+  let reminder = true
+  on('prompt.submit', (_$, e) => ({ text: e.text }) as never)
+  on('classic.SessionStart', () => ({ additionalContext: ['CAVEMAN MODE ACTIVE — mode: caveman'] }) as never)
+  on('classic.UserPromptSubmit', () => (reminder ? { additionalContext: ['CAVEMAN MODE ACTIVE (ultra). Respond terse'] } : {}) as never)
+  // a ponytail flag left by another window must not add a badge here
+  on('env.get', () => ({ value: 'C:/cfg' }) as never)
+  on('fs.read', () => ({ value: 'full\n' }) as never)
+
+  await $.classic.SessionStart({ source: 'startup' } as never)
+  await $.classic.UserPromptSubmit({ prompt: 'a' } as never)
+  await $.prompt.submit({ text: 'a' } as never)
+  let ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  expect((await ui.find({ type: 'Box', key: 'caveman' }))?.text).toBe('caveman:ultra')
+  expect(await ui.find({ type: 'Box', key: 'ponytail' })).toBeUndefined()
+
+  reminder = false
+  await $.classic.UserPromptSubmit({ prompt: 'stop caveman' } as never)
+  ui = await $.ui.mount({ plugin: 'skills-band', surface: 'terminal', component: 'AbovePrompt', props })
+  expect(await ui.find({ type: 'Box', key: 'caveman' })).toBeUndefined()
 })

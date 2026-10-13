@@ -51,49 +51,53 @@ const bandSvg = (chips: Chip[], empty: string | null) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="ui-monospace, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14">${marks.join('')}</svg>`
 }
 
-// the caveman/ponytail hooks write these flags; whitelist the text so nothing odd reaches the band
-const readFlag = async ($: EngineInterface, path: string) => {
+// the caveman and ponytail hooks say so in the context they inject; that text, not a flag file, proves a mode reached this session
+const MARKS = {
+  caveman: /CAVEMAN MODE ACTIVE(?: — mode: | \()([a-z0-9-]{1,20})/,
+  ponytail: /PONYTAIL MODE ACTIVE — level: ([a-z0-9-]{1,20})/,
+} as const
+
+const injected = (context: readonly string[] | undefined, name: keyof typeof MARKS) =>
+  (context ?? []).join('\n').match(MARKS[name])?.[1] ?? null
+
+// ponytail injects once at session start, so a later /ponytail level switch is read from its flag; whitelist the text
+const ponytailFlag = async ($: EngineInterface) => {
   try {
-    const mode = String(await $.fs.read(path)).split(/\r?\n/)[0].trim()
+    const config = await $.env.get('CLAUDE_CONFIG_DIR')
+    const home = config ?? `${(await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME')) ?? ''}/.claude`
+    const mode = String(await $.fs.read(`${home}/.ponytail-active`)).split(/\r?\n/)[0].trim()
     return /^[a-z0-9-]{1,20}$/.test(mode) ? mode : null
   } catch {
     return null
   }
 }
 
-const loadModes = async ($: EngineInterface) => {
-  try {
-    await readModes($)
-  } catch {
-    // badges are cosmetic; a missing env or session id must never block the prompt
-  }
-}
-
-const readModes = async ($: EngineInterface) => {
-  const config = await $.env.get('CLAUDE_CONFIG_DIR')
-  const home = config ?? `${(await $.env.get('USERPROFILE')) ?? (await $.env.get('HOME')) ?? ''}/.claude`
-  const id = await $.session.id()
-  // same lookup as caveman-statusline.ps1: this session's mode, else the machine-wide flag
-  const caveman = (/^[A-Za-z0-9_-]{1,128}$/.test(id) ? await readFlag($, `${home}/.caveman-sessions/${id}.mode`) : null)
-    ?? (await readFlag($, `${home}/.caveman-active`))
-  const ponytail = await readFlag($, `${home}/.ponytail-active`)
-  await update($, modes, () => ({ caveman, ponytail }))
-}
-
 export const register: Register = on => {
   let spinner: Timer | undefined
 
-  on('session.start', async ($, e, next) => {
+  on('classic.SessionStart', async ($, e, next) => {
     const ran = await next(e)
-    await loadModes($)
+    const context = (ran as { additionalContext?: string[] }).additionalContext
+    await update($, modes, () => ({ caveman: injected(context, 'caveman'), ponytail: injected(context, 'ponytail') }))
+    return ran
+  })
+
+  // caveman re-injects on every prompt while it is on, so the latest prompt decides its badge
+  on('classic.UserPromptSubmit', async ($, e, next) => {
+    const ran = await next(e)
+    const caveman = injected((ran as { additionalContext?: string[] }).additionalContext, 'caveman')
+    await update($, modes, m => ({ ...m, caveman }))
     return ran
   })
 
   on('prompt.submit', async ($, e, next) => {
     await update($, turn, n => n + 1)
     const ran = await next(e)
-    // /caveman and /ponytail mode switches arrive as prompts, so re-read the flags after
-    await loadModes($)
+    // the flag only relabels a ponytail this session already has; another window cannot add or remove it
+    if ((await read($, modes)).ponytail !== null) {
+      const level = await ponytailFlag($)
+      if (level !== null) await update($, modes, m => ({ ...m, ponytail: level }))
+    }
     return ran
   })
 
