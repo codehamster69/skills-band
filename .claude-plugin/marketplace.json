@@ -1,0 +1,6 @@
+{
+  "name": "rohan-mods",
+  "description": "Claude Code mods by Rohandeep",
+  "owner": { "name": "Rohandeep" },
+  "plugins": [{ "name": "skills-band", "source": "./", "description": "One-row skills band above the prompt: heat-colored skills, spinner on fresh loads, caveman/ponytail mode badges" }]
+}

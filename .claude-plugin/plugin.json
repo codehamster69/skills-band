@@ -1,0 +1,1 @@
+{ "name": "skills-band", "version": "0.2.0", "description": "One-row skills band: caveman/ponytail modes, heat-colored skills, spinner on fresh loads", "author": { "name": "Rohandeep" }, "types": "./types/index.d.ts" }
