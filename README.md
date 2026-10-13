@@ -6,8 +6,9 @@ A one-row band above the Claude Code prompt that shows which skills this session
 
 <sub>Preview drawn with the band's real colors and layout: `seo-audit` loaded this turn (spinning), `supabase` last turn, `frontend-design` 2–3 turns ago, `stripe` older.</sub>
 
+- **Every skill counts**: skills typed as `/name`, loaded through the Skill tool, or preloaded into subagents all show up. Plugin skills show their short name (`frontend-design`, not `frontend-design:frontend-design`).
 - **Heat**: each skill is colored by how recently it ran. Orange means this turn, amber means last turn, dark amber means 2–3 turns ago, and gray means older. The most recent skills come first. `×N` counts how many times a skill ran.
-- **Pulse**: a skill loaded during the current turn spins `◐◓◑◒` while Claude works, then shows 🔥 when the turn ends.
+- **Pulse**: a skill loaded during the current turn spins `◐◓◑◒` while Claude works, then shows `●` when the turn ends.
 - **Mode badges** (optional): when the caveman or ponytail plugins are active, their mode shows as a violet badge (`ponytail:ultra`). Without them, the badges stay hidden.
 
 ## Install
@@ -26,7 +27,7 @@ claude plugin marketplace add codehamster69/skills-band
 claude plugin install skills-band@rohan-mods
 ```
 
-Restart Claude Code. The band appears above the prompt after the first skill runs.
+Restart Claude Code. The band appears above the prompt right away ("no skills used yet") and fills in as skills run. Skills that ran before the restart are not shown.
 
 ### Using caveman/ponytail?
 
@@ -42,7 +43,7 @@ claude plugin uninstall skills-band@rohan-mods
 ## Requirements
 
 - A Claude Code build that supports mods (`hooks/hooks.json` with `modules`).
-- A terminal font with emoji and `◐◓◑◒` (the Windows Terminal, iTerm2 and most Linux defaults have them).
+- A font with `◐◓◑◒●` (the Windows Terminal, iTerm2 and most Linux defaults have them).
 - Hex background colors, which need a truecolor terminal.
 
 ## Develop

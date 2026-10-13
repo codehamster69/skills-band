@@ -63,19 +63,18 @@ export const register: Register = on => {
     return ran
   })
 
-  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+  // skill.prompt fires for /name, the Skill tool and subagent preloads alike; tool.call saw only the Skill tool
+  on('skill.prompt', async ($, e, next) => {
     const ran = await next(e)
-    if (ran.deny === undefined && ran.isError !== true) {
-      const now = await read($, turn)
-      await update($, used, list => {
-        const prev = list.find(s => s.name === e.skill)
-        return [...list.filter(s => s.name !== e.skill), { name: e.skill, turn: now, count: (prev?.count ?? 0) + 1 }]
-      })
-      try {
-        spinner ??= $.clock.every(120, () => void update($, frame, f => f + 1))
-      } catch {
-        // no timers on this host: the spinner shows one frame instead of turning
-      }
+    const now = await read($, turn)
+    await update($, used, list => {
+      const prev = list.find(s => s.name === e.skill)
+      return [...list.filter(s => s.name !== e.skill), { name: e.skill, turn: now, count: (prev?.count ?? 0) + 1 }]
+    })
+    try {
+      spinner ??= $.clock.every(120, () => void update($, frame, f => f + 1))
+    } catch {
+      // no timers on this host: the spinner shows one frame instead of turning
     }
     return ran
   })
@@ -105,19 +104,23 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="row" flexWrap="wrap" gap={1}>
-        <Text key="header" backgroundColor={HEADER} color={INK} bold> ⚡ SKILLS </Text>
+        <Text key="header" backgroundColor={HEADER} color={INK} bold> SKILLS </Text>
         {always.map(a => (
           <Text key={a.name} backgroundColor={ALWAYS_BG} color="#f5f3ff" bold> {a.label} </Text>
         ))}
         {skills.map(s => {
           const age = now - s.turn
-          const icon = age !== 0 ? '' : e.props.isWorking ? SPIN[tick % SPIN.length] : '🔥'
+          // emoji draw in their own colors and vanish on the orange chip, so the fresh mark is a plain glyph
+          const icon = age !== 0 ? '' : e.props.isWorking ? SPIN[tick % SPIN.length] : '●'
+          // plugin skills arrive as plugin:skill; the plugin half is noise in a chip
+          const label = s.name.split(':').pop()
           return (
             <Text key={s.name} backgroundColor={heat(age)} color={age > 3 ? '#a1a1aa' : INK} bold={age === 0}>
-              {` ${icon ? `${icon} ` : ''}${s.name}${s.count > 1 ? ` ×${s.count}` : ''} `}
+              {` ${icon ? `${icon} ` : ''}${label}${s.count > 1 ? ` ×${s.count}` : ''} `}
             </Text>
           )
         })}
+        {skills.length === 0 && <Text key="empty" dimColor>no skills used yet</Text>}
       </Box>
     )
   })
