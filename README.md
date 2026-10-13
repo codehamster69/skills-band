@@ -4,12 +4,13 @@ A one-row band above the Claude Code prompt that shows which skills this session
 
 ![skills-band above the Claude Code prompt](docs/band.svg)
 
-<sub>Preview drawn with the band's real colors and layout: `seo-audit` loaded this turn (spinning), `supabase` last turn, `frontend-design` 2–3 turns ago, `stripe` older.</sub>
+<sub>Preview of the band in a dark theme: caveman and ponytail active, `seo-audit` loading this turn (spinning), the rest used in earlier turns. Labels take your theme's text color, so a light theme shows dark text.</sub>
 
 - **Every skill counts**: skills typed as `/name`, loaded through the Skill tool, or preloaded into subagents all show up. Plugin skills show their short name (`frontend-design`, not `frontend-design:frontend-design`).
-- **Heat**: each skill is colored by how recently it ran. Orange means this turn, amber means last turn, dark amber means 2–3 turns ago, and gray means older. The most recent skills come first. `×N` counts how many times a skill ran.
+- **Active dot**: an orange `●` in Claude's color marks a skill used this turn. Skills from earlier turns have no dot and are dimmed. The most recent skills come first. `×N` counts how many times a skill ran.
+- **Theme colors**: labels use your theme's own text color, so the band stays readable in light and dark themes.
 - **Pulse**: a skill loaded during the current turn spins `◐◓◑◒` while Claude works, then shows `●` when the turn ends.
-- **Mode badges** (optional): when the caveman or ponytail plugins are active, their mode shows as a violet badge (`ponytail:ultra`). Without them, the badges stay hidden.
+- **Mode badges** (optional): when the caveman or ponytail plugins are active in this session, they show with an orange dot and their mode (`ponytail:ultra`). When they stop, or aren't installed, they disappear.
 
 ## Install
 
@@ -53,7 +54,7 @@ claude plugin validate .
 claude plugin test .
 ```
 
-Colors are constants at the top of `hooks/register.tsx` (`HEADER`, `ALWAYS_BG`, `HEAT`).
+The dot color is the `ORANGE` constant at the top of `hooks/register.tsx`; everything else follows your theme.
 
 ## License
 
